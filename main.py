@@ -50,15 +50,18 @@ def get_weather(region):
     else:
         # 获取地区的location--id
         location_id = response["location"][0]["id"]
-    weather_url = "https://devapi.qweather.com/v7/weather/now?location={}&key={}".format(location_id, key)
+    weather_url = "https://devapi.qweather.com/v7/weather/3d?location={}&key={}".format(location_id, key)
     response = get(weather_url, headers=headers).json()
+    #日期
+    fxDate= response["daily"][0]["fxDate"]
     # 天气
-    weather = response["now"]["text"]
+    weather = response["daily"][0]["textDay"]
     # 当前温度
-    temp = response["now"]["temp"] + u"\N{DEGREE SIGN}" + "C"
+    tempMAX = response["daily"][0]["tempMax"] + u"\N{DEGREE SIGN}" + "C"
+    tempMIN = response["daily"][0]["tempMin"] + u"\N{DEGREE SIGN}" + "C"
     # 风向
-    wind_dir = response["now"]["windDir"]
-    return weather, temp, wind_dir
+    wind_dir = response["daily"][0]["windDirDay"]
+    return weather,tempMAX,tempMIN,wind_dir
  
  
 def get_birthday(birthday, year, today):
@@ -115,7 +118,7 @@ def get_ciba():
     return note_ch, note_en
  
  
-def send_message(to_user, access_token, region_name, weather, temp, wind_dir, note_ch, note_en):
+def send_message(to_user, access_token, region_name, weather, tempMAX, tempMIN, wind_dir, note_ch, note_en):
     url = "https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={}".format(access_token)
     week_list = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"]
     year = localtime().tm_year
@@ -153,8 +156,12 @@ def send_message(to_user, access_token, region_name, weather, temp, wind_dir, no
                 "value": weather,
                 "color": get_color()
             },
-            "temp": {
-                "value": temp,
+            "tempMAX": {
+                "value": tempMAX,
+                "color": get_color()
+            },
+            "tempMIN": {
+                "value": tempMIN,
                 "color": get_color()
             },
             "wind_dir": {
@@ -221,7 +228,7 @@ if __name__ == "__main__":
     users = config["user"]
     # 传入地区获取天气信息
     region = config["region"]
-    weather, temp, wind_dir = get_weather(region)
+    weather, tempMAX, tempMIN,wind_dir = get_weather(region)
     note_ch = config["note_ch"]
     note_en = config["note_en"]
     if note_ch == "" and note_en == "":
@@ -229,5 +236,5 @@ if __name__ == "__main__":
         note_ch, note_en = get_ciba()
     # 公众号推送消息
     for user in users:
-        send_message(user, accessToken, region, weather, temp, wind_dir, note_ch, note_en)
+        send_message(user, accessToken, region, weather, tempMAX, tempMIN,wind_dir, note_ch, note_en)
     os.system("pause")
