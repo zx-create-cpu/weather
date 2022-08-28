@@ -50,6 +50,7 @@ def get_weather(region):
     else:
         # 获取地区的location--id
         location_id = response["location"][0]["id"]
+        #获取天气状况 .参数获取详见和风天气开发者文档
     weather_url = "https://devapi.qweather.com/v7/weather/3d?location={}&key={}".format(location_id, key)
     response = get(weather_url, headers=headers).json()
     #日期
@@ -61,8 +62,27 @@ def get_weather(region):
     tempMIN = response["daily"][0]["tempMin"] + u"\N{DEGREE SIGN}" + "C"
     # 风向
     wind_dir = response["daily"][0]["windDirDay"]
-    return weather,tempMAX,tempMIN,wind_dir
- 
+    #紫外线强度指数
+    uvIndex=response["daily"][0]["uvIndex"]
+    return weather,tempMAX,tempMIN,wind_dir,uvIndex
+
+def get_indices(region):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                        'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36'
+    }
+    key = config["weather_key"]
+    region_url = "https://geoapi.qweather.com/v2/city/lookup?location={}&key={}".format(region, key)
+    response = get(region_url, headers=headers).json()
+    location_id = response["location"][0]["id"]
+    #获取生活天气生活指数
+    indices_url = "https://devapi.qweather.com/v7/indices/1d?type=3&location={}&key={}".format(location_id, key)
+    response = get(indices_url, headers=headers).json()
+    #穿衣指数
+    category= response["daily"][0]["category"]
+    # 生活指数预报详细描述
+    text = response["daily"][0]["text"]
+    return text,category
  
 def get_birthday(birthday, year, today):
     birthday_year = birthday.split("-")[0]
@@ -118,7 +138,7 @@ def get_ciba():
     return note_ch, note_en
  
  
-def send_message(to_user, access_token, region_name, weather, tempMAX, tempMIN, wind_dir, note_ch, note_en):
+def send_message(to_user, access_token, region_name, weather, tempMAX, tempMIN, wind_dir,uvIndex,text,category,note_ch, note_en):
     url = "https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={}".format(access_token)
     week_list = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"]
     year = localtime().tm_year
@@ -179,6 +199,18 @@ def send_message(to_user, access_token, region_name, weather, tempMAX, tempMIN, 
             "note_ch": {
                 "value": note_ch,
                 "color": get_color()
+            },
+            "uvIndex":{
+                "value":uvIndex,
+                "color":get_color()
+            },
+            "text": {
+                "value": text,
+                "color": get_color()
+            },
+            "category": {
+                "value":category ,
+                "color": get_color()
             }
         }
     }
@@ -228,7 +260,8 @@ if __name__ == "__main__":
     users = config["user"]
     # 传入地区获取天气信息
     region = config["region"]
-    weather, tempMAX, tempMIN,wind_dir = get_weather(region)
+    weather, tempMAX, tempMIN,wind_dir,uvIndex= get_weather(region)
+    text, category=get_indices(region)
     note_ch = config["note_ch"]
     note_en = config["note_en"]
     if note_ch == "" and note_en == "":
@@ -236,5 +269,5 @@ if __name__ == "__main__":
         note_ch, note_en = get_ciba()
     # 公众号推送消息
     for user in users:
-        send_message(user, accessToken, region, weather, tempMAX, tempMIN,wind_dir, note_ch, note_en)
+        send_message(user, accessToken, region, weather, tempMAX, tempMIN,wind_dir,uvIndex,text, category,note_ch, note_en)
     os.system("pause")
