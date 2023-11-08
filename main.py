@@ -78,7 +78,7 @@ def get_indices(region):
     #获取生活天气生活指数
     indices_url = "https://devapi.qweather.com/v7/indices/1d?type=3&location={}&key={}".format(location_id, key)
     response = get(indices_url, headers=headers).json()
-    #穿衣指数
+    #穿衣指数.
     category= response["daily"][0]["category"]
     # 生活指数预报详细描述
     text = response["daily"][0]["text"]
