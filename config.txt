@@ -1,5 +1,5 @@
 {
-# 公众号配置1
+# 公众号配置
 # 公众号appId
 "app_id": "wxedebfa503c21c637",
 # 公众号appSecret
